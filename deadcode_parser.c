@@ -11,13 +11,24 @@ typedef struct {
 } Parser;
 
 Parser* parser_create(const char* input) {
+    if (!input) {
+        return NULL;
+    }
+    size_t input_len = strlen(input);
+    if (input_len > 100000) {
+        return NULL;
+    }
     Parser* parser = (Parser*)malloc(sizeof(Parser));
-    if (parser && input) {
-        parser->length = strlen(input);
-        parser->input = (char*)malloc(parser->length + 1);
+    if (parser) {
+        parser->length = (int)input_len;
+        parser->input = (char*)malloc(input_len + 1);
         if (parser->input) {
-            strcpy(parser->input, input);
+            strncpy(parser->input, input, input_len);
+            parser->input[input_len] = '\0';
             parser->position = 0;
+        } else {
+            free(parser);
+            return NULL;
         }
     }
     return parser;
@@ -48,7 +59,7 @@ void parser_skip_whitespace(Parser* parser) {
 int parser_parse_integer(Parser* parser) {
     if (parser && parser->input) {
         parser_skip_whitespace(parser);
-        int value = 0;
+        long long value = 0;
         int sign = 1;
         
         if (parser->position < parser->length && parser->input[parser->position] == '-') {
@@ -56,18 +67,27 @@ int parser_parse_integer(Parser* parser) {
             parser->position++;
         }
         
-        while (parser->position < parser->length && isdigit(parser->input[parser->position])) {
+        int digits = 0;
+        while (parser->position < parser->length && isdigit(parser->input[parser->position]) && digits < 10) {
             value = value * 10 + (parser->input[parser->position] - '0');
             parser->position++;
+            digits++;
+            if (value > 2147483647LL) {
+                return 0;
+            }
         }
         
-        return value * sign;
+        long long result = value * sign;
+        if (result > 2147483647LL || result < -2147483648LL) {
+            return 0;
+        }
+        return (int)result;
     }
     return 0;
 }
 
 int parser_parse_token(Parser* parser, char* buffer, int buffer_size) {
-    if (parser && parser->input && buffer && buffer_size > 0) {
+    if (parser && parser->input && buffer && buffer_size > 0 && buffer_size <= 10000) {
         parser_skip_whitespace(parser);
         int i = 0;
         
@@ -76,7 +96,11 @@ int parser_parse_token(Parser* parser, char* buffer, int buffer_size) {
                i < buffer_size - 1) {
             buffer[i++] = parser->input[parser->position++];
         }
-        buffer[i] = '\0';
+        if (i < buffer_size) {
+            buffer[i] = '\0';
+        } else {
+            buffer[buffer_size - 1] = '\0';
+        }
         return i > 0;
     }
     return 0;

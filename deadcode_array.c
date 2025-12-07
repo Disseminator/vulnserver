@@ -16,15 +16,25 @@ DynamicArray* dynamic_array_create() {
     if (arr) {
         arr->capacity = INITIAL_CAPACITY;
         arr->size = 0;
-        arr->data = (int*)malloc(arr->capacity * sizeof(int));
+        arr->data = (int*)malloc((size_t)arr->capacity * sizeof(int));
+        if (!arr->data) {
+            free(arr);
+            return NULL;
+        }
     }
     return arr;
 }
 
 static void dynamic_array_resize(DynamicArray* arr) {
     if (arr && arr->size >= arr->capacity) {
-        arr->capacity *= 2;
-        arr->data = (int*)realloc(arr->data, arr->capacity * sizeof(int));
+        int new_capacity = arr->capacity * 2;
+        if (new_capacity > 0 && new_capacity <= 1000000) {
+            int* new_data = (int*)realloc(arr->data, (size_t)new_capacity * sizeof(int));
+            if (new_data) {
+                arr->data = new_data;
+                arr->capacity = new_capacity;
+            }
+        }
     }
 }
 

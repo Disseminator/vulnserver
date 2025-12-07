@@ -11,13 +11,19 @@ typedef struct {
 } StringProcessor;
 
 StringProcessor* string_processor_create(int capacity) {
+    if (capacity <= 0 || capacity > 1000000) {
+        return NULL;
+    }
     StringProcessor* sp = (StringProcessor*)malloc(sizeof(StringProcessor));
     if (sp) {
         sp->capacity = capacity;
-        sp->buffer = (char*)malloc(capacity);
+        sp->buffer = (char*)malloc((size_t)capacity);
         if (sp->buffer) {
             sp->buffer[0] = '\0';
             sp->length = 0;
+        } else {
+            free(sp);
+            return NULL;
         }
     }
     return sp;
@@ -25,10 +31,12 @@ StringProcessor* string_processor_create(int capacity) {
 
 void string_processor_append(StringProcessor* sp, const char* str) {
     if (sp && sp->buffer && str) {
-        int str_len = strlen(str);
-        if (sp->length + str_len < sp->capacity) {
-            strcat(sp->buffer, str);
-            sp->length += str_len;
+        size_t str_len = strlen(str);
+        size_t available = (size_t)(sp->capacity - sp->length - 1);
+        if (str_len > 0 && str_len <= available) {
+            strncpy(sp->buffer + sp->length, str, available);
+            sp->buffer[sp->capacity - 1] = '\0';
+            sp->length += (int)str_len;
         }
     }
 }

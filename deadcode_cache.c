@@ -47,19 +47,26 @@ int cache_put(Cache* cache, const char* key, void* value, int value_size) {
         }
         
         unsigned int index = cache_hash(key);
+        size_t key_len = strlen(key);
+        if (key_len > 1000) {
+            return 0;
+        }
         CacheEntry* entry = (CacheEntry*)malloc(sizeof(CacheEntry));
         if (entry) {
-            entry->key = (char*)malloc(strlen(key) + 1);
+            entry->key = (char*)malloc(key_len + 1);
             if (entry->key) {
-                strcpy(entry->key, key);
-                entry->value = malloc(value_size);
-                if (entry->value) {
-                    memcpy(entry->value, value, value_size);
-                    entry->value_size = value_size;
-                    entry->next = cache->entries[index];
-                    cache->entries[index] = entry;
-                    cache->count++;
-                    return 1;
+                strncpy(entry->key, key, key_len);
+                entry->key[key_len] = '\0';
+                if (value_size > 0 && value_size <= 100000) {
+                    entry->value = malloc((size_t)value_size);
+                    if (entry->value) {
+                        memcpy(entry->value, value, (size_t)value_size);
+                        entry->value_size = value_size;
+                        entry->next = cache->entries[index];
+                        cache->entries[index] = entry;
+                        cache->count++;
+                        return 1;
+                    }
                 }
                 free(entry->key);
             }

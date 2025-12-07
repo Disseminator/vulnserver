@@ -52,13 +52,17 @@ void hash_table_put(HashTable* table, const char* key, int value) {
         
         HashEntry* new_entry = (HashEntry*)malloc(sizeof(HashEntry));
         if (new_entry) {
-            new_entry->key = (char*)malloc(strlen(key) + 1);
+            size_t key_len = strlen(key);
+            new_entry->key = (char*)malloc(key_len + 1);
             if (new_entry->key) {
-                strcpy(new_entry->key, key);
+                strncpy(new_entry->key, key, key_len);
+                new_entry->key[key_len] = '\0';
                 new_entry->value = value;
                 new_entry->next = table->buckets[index];
                 table->buckets[index] = new_entry;
                 table->count++;
+            } else {
+                free(new_entry);
             }
         }
     }

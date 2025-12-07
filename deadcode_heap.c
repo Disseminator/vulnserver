@@ -11,11 +11,18 @@ typedef struct {
 } MinHeap;
 
 MinHeap* min_heap_create(int capacity) {
+    if (capacity <= 0) {
+        return NULL;
+    }
     MinHeap* heap = (MinHeap*)malloc(sizeof(MinHeap));
     if (heap) {
         heap->capacity = capacity > MAX_HEAP_SIZE ? MAX_HEAP_SIZE : capacity;
         heap->size = 0;
-        heap->data = (int*)malloc(heap->capacity * sizeof(int));
+        heap->data = (int*)malloc((size_t)heap->capacity * sizeof(int));
+        if (!heap->data) {
+            free(heap);
+            return NULL;
+        }
     }
     return heap;
 }

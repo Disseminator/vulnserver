@@ -10,13 +10,24 @@ typedef struct {
 } FileManager;
 
 FileManager* file_manager_create(const char* filename) {
+    if (!filename) {
+        return NULL;
+    }
+    size_t filename_len = strlen(filename);
+    if (filename_len == 0 || filename_len > 260) {
+        return NULL;
+    }
     FileManager* fm = (FileManager*)malloc(sizeof(FileManager));
-    if (fm && filename) {
-        fm->filename = (char*)malloc(strlen(filename) + 1);
+    if (fm) {
+        fm->filename = (char*)malloc(filename_len + 1);
         if (fm->filename) {
-            strcpy(fm->filename, filename);
+            strncpy(fm->filename, filename, filename_len);
+            fm->filename[filename_len] = '\0';
             fm->file = NULL;
             fm->is_open = 0;
+        } else {
+            free(fm);
+            return NULL;
         }
     }
     return fm;
@@ -45,7 +56,7 @@ int file_manager_open_write(FileManager* fm) {
 }
 
 int file_manager_read_line(FileManager* fm, char* buffer, int size) {
-    if (fm && fm->file && fm->is_open && buffer && size > 0) {
+    if (fm && fm->file && fm->is_open && buffer && size > 0 && size <= 10000) {
         if (fgets(buffer, size, fm->file)) {
             return 1;
         }

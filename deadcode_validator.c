@@ -37,21 +37,24 @@ void validator_set_requirements(Validator* validator, int uppercase, int lowerca
 
 int validator_validate_string(Validator* validator, const char* str) {
     if (validator && str) {
-        int len = strlen(str);
-        if (len < validator->min_length || len > validator->max_length) {
+        size_t len = strlen(str);
+        if (len > 10000) {
+            return 0;
+        }
+        if ((int)len < validator->min_length || (int)len > validator->max_length) {
             return 0;
         }
         
         int has_upper = 0, has_lower = 0, has_digit = 0, has_special = 0;
         
-        for (int i = 0; str[i] != '\0'; i++) {
-            if (isupper(str[i])) {
+        for (size_t i = 0; str[i] != '\0' && i < 10000; i++) {
+            if (isupper((unsigned char)str[i])) {
                 has_upper = 1;
-            } else if (islower(str[i])) {
+            } else if (islower((unsigned char)str[i])) {
                 has_lower = 1;
-            } else if (isdigit(str[i])) {
+            } else if (isdigit((unsigned char)str[i])) {
                 has_digit = 1;
-            } else if (!isalnum(str[i])) {
+            } else if (!isalnum((unsigned char)str[i])) {
                 has_special = 1;
             }
         }
@@ -68,42 +71,56 @@ int validator_validate_string(Validator* validator, const char* str) {
 
 int validator_validate_email(const char* email) {
     if (email) {
-        int len = strlen(email);
+        size_t len = strlen(email);
+        if (len > 255 || len == 0) {
+            return 0;
+        }
         int at_pos = -1;
         int dot_pos = -1;
         
-        for (int i = 0; i < len; i++) {
+        for (size_t i = 0; i < len; i++) {
             if (email[i] == '@') {
                 if (at_pos != -1) return 0;
-                at_pos = i;
+                at_pos = (int)i;
             } else if (email[i] == '.' && at_pos != -1) {
-                dot_pos = i;
+                dot_pos = (int)i;
             }
         }
         
-        return (at_pos > 0 && dot_pos > at_pos + 1 && dot_pos < len - 1);
+        return (at_pos > 0 && dot_pos > at_pos + 1 && dot_pos < (int)len - 1);
     }
     return 0;
 }
 
 int validator_validate_number(const char* str, int min, int max) {
     if (str) {
-        for (int i = 0; str[i] != '\0'; i++) {
-            if (!isdigit(str[i]) && str[i] != '-') {
+        size_t len = strlen(str);
+        if (len > 20 || len == 0) {
+            return 0;
+        }
+        for (size_t i = 0; i < len; i++) {
+            if (!isdigit((unsigned char)str[i]) && (i != 0 || str[i] != '-')) {
                 return 0;
             }
         }
-        int num = atoi(str);
-        return (num >= min && num <= max);
+        long long num = atoll(str);
+        if (num < min || num > max) {
+            return 0;
+        }
+        return 1;
     }
     return 0;
 }
 
 int validator_validate_phone(const char* phone) {
     if (phone) {
+        size_t len = strlen(phone);
+        if (len > 30 || len == 0) {
+            return 0;
+        }
         int digit_count = 0;
-        for (int i = 0; phone[i] != '\0'; i++) {
-            if (isdigit(phone[i])) {
+        for (size_t i = 0; i < len; i++) {
+            if (isdigit((unsigned char)phone[i])) {
                 digit_count++;
             } else if (phone[i] != '-' && phone[i] != ' ' && phone[i] != '(' && phone[i] != ')') {
                 return 0;

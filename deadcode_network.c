@@ -12,24 +12,43 @@ typedef struct {
 NetworkConnection* network_connection_create(const char* hostname, int port, const char* protocol) {
     NetworkConnection* conn = (NetworkConnection*)malloc(sizeof(NetworkConnection));
     if (conn) {
+        conn->hostname = NULL;
+        conn->protocol = NULL;
+        conn->port = 0;
+        
         if (hostname) {
-            conn->hostname = (char*)malloc(strlen(hostname) + 1);
-            if (conn->hostname) {
-                strcpy(conn->hostname, hostname);
+            size_t hostname_len = strlen(hostname);
+            if (hostname_len > 0 && hostname_len <= 255) {
+                conn->hostname = (char*)malloc(hostname_len + 1);
+                if (conn->hostname) {
+                    strncpy(conn->hostname, hostname, hostname_len);
+                    conn->hostname[hostname_len] = '\0';
+                } else {
+                    free(conn);
+                    return NULL;
+                }
             }
-        } else {
-            conn->hostname = NULL;
         }
         
-        conn->port = port;
+        if (network_connection_validate_port(port)) {
+            conn->port = port;
+        }
         
         if (protocol) {
-            conn->protocol = (char*)malloc(strlen(protocol) + 1);
-            if (conn->protocol) {
-                strcpy(conn->protocol, protocol);
+            size_t protocol_len = strlen(protocol);
+            if (protocol_len > 0 && protocol_len <= 20) {
+                conn->protocol = (char*)malloc(protocol_len + 1);
+                if (conn->protocol) {
+                    strncpy(conn->protocol, protocol, protocol_len);
+                    conn->protocol[protocol_len] = '\0';
+                } else {
+                    if (conn->hostname) {
+                        free(conn->hostname);
+                    }
+                    free(conn);
+                    return NULL;
+                }
             }
-        } else {
-            conn->protocol = NULL;
         }
     }
     return conn;
@@ -57,11 +76,19 @@ int network_connection_validate_hostname(const char* hostname) {
 
 char* network_connection_build_url(NetworkConnection* conn) {
     if (conn && conn->hostname && conn->protocol) {
-        int url_len = strlen(conn->protocol) + strlen(conn->hostname) + 20;
+        size_t protocol_len = strlen(conn->protocol);
+        size_t hostname_len = strlen(conn->hostname);
+        if (protocol_len > 20 || hostname_len > 255) {
+            return NULL;
+        }
+        size_t url_len = protocol_len + hostname_len + 20;
         char* url = (char*)malloc(url_len);
         if (url) {
-            sprintf(url, "%s://%s:%d", conn->protocol, conn->hostname, conn->port);
-            return url;
+            int result = snprintf(url, url_len, "%s://%s:%d", conn->protocol, conn->hostname, conn->port);
+            if (result > 0 && (size_t)result < url_len) {
+                return url;
+            }
+            free(url);
         }
     }
     return NULL;
@@ -77,10 +104,13 @@ void network_connection_set_hostname(NetworkConnection* conn, const char* hostna
     if (conn && hostname && network_connection_validate_hostname(hostname)) {
         if (conn->hostname) {
             free(conn->hostname);
+            conn->hostname = NULL;
         }
-        conn->hostname = (char*)malloc(strlen(hostname) + 1);
+        size_t hostname_len = strlen(hostname);
+        conn->hostname = (char*)malloc(hostname_len + 1);
         if (conn->hostname) {
-            strcpy(conn->hostname, hostname);
+            strncpy(conn->hostname, hostname, hostname_len);
+            conn->hostname[hostname_len] = '\0';
         }
     }
 }

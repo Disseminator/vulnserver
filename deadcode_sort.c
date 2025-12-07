@@ -8,14 +8,20 @@ typedef struct {
 } Sorter;
 
 Sorter* sorter_create(int* array, int size) {
+    if (!array || size <= 0 || size > 100000) {
+        return NULL;
+    }
     Sorter* sorter = (Sorter*)malloc(sizeof(Sorter));
     if (sorter) {
         sorter->size = size;
-        sorter->array = (int*)malloc(size * sizeof(int));
+        sorter->array = (int*)malloc((size_t)size * sizeof(int));
         if (sorter->array) {
             for (int i = 0; i < size; i++) {
                 sorter->array[i] = array[i];
             }
+        } else {
+            free(sorter);
+            return NULL;
         }
     }
     return sorter;

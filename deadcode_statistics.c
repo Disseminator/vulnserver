@@ -10,11 +10,18 @@ typedef struct {
 } Statistics;
 
 Statistics* statistics_create(int capacity) {
+    if (capacity <= 0 || capacity > 1000000) {
+        return NULL;
+    }
     Statistics* stats = (Statistics*)malloc(sizeof(Statistics));
     if (stats) {
         stats->capacity = capacity;
         stats->size = 0;
-        stats->data = (double*)malloc(capacity * sizeof(double));
+        stats->data = (double*)malloc((size_t)capacity * sizeof(double));
+        if (!stats->data) {
+            free(stats);
+            return NULL;
+        }
     }
     return stats;
 }
@@ -38,7 +45,7 @@ double statistics_mean(Statistics* stats) {
 
 double statistics_median(Statistics* stats) {
     if (stats && stats->data && stats->size > 0) {
-        double* sorted = (double*)malloc(stats->size * sizeof(double));
+        double* sorted = (double*)malloc((size_t)stats->size * sizeof(double));
         if (sorted) {
             for (int i = 0; i < stats->size; i++) {
                 sorted[i] = stats->data[i];

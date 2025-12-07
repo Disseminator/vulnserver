@@ -9,15 +9,30 @@ typedef struct {
 } Matrix;
 
 Matrix* matrix_create(int rows, int cols) {
+    if (rows <= 0 || cols <= 0 || rows > 1000 || cols > 1000) {
+        return NULL;
+    }
     Matrix* matrix = (Matrix*)malloc(sizeof(Matrix));
     if (matrix) {
         matrix->rows = rows;
         matrix->cols = cols;
-        matrix->data = (double**)malloc(rows * sizeof(double*));
+        matrix->data = (double**)malloc((size_t)rows * sizeof(double*));
         if (matrix->data) {
-            for (int i = 0; i < rows; i++) {
-                matrix->data[i] = (double*)calloc(cols, sizeof(double));
+            int i;
+            for (i = 0; i < rows; i++) {
+                matrix->data[i] = (double*)calloc((size_t)cols, sizeof(double));
+                if (!matrix->data[i]) {
+                    for (int j = 0; j < i; j++) {
+                        free(matrix->data[j]);
+                    }
+                    free(matrix->data);
+                    free(matrix);
+                    return NULL;
+                }
             }
+        } else {
+            free(matrix);
+            return NULL;
         }
     }
     return matrix;
